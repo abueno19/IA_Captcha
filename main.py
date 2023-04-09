@@ -9,13 +9,15 @@ import argparse
 import os
 import numpy as np
 import train.train as train
+import utils.load_date as load_date
+import model.model as model
 
 
 
 
-class Main(train.Train):
+class Main(train.Train , load_date.Date, model.Model):
     def __init__(self) -> None:
-        self.model = None
+        
         self.model_path = None
         self.model_name = None
         self.model_version = None
@@ -27,7 +29,8 @@ class Main(train.Train):
         self.model_output_type = None
         self.model_input_dtype = None
         self.model_output_dtype = None
-        
+        self.modelo= self.model()
+        self.data = self.load_date()
         
         
 
