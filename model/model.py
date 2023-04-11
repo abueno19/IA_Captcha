@@ -43,7 +43,10 @@ class Model():
         # Compilar el modelo y devolverlo
         model.compile(optimizer=keras.optimizers.Adam())
 
-        return model
+        self.modelo1 = model
+        opt = keras.optimizers.Adam(learning_rate=0.001)
+        self.modelo1.compile(optimizer=opt)
+        self.modelo=self.modelo1
 class CTCLayer(layers.Layer):
     def __init__(self, name=None,**kwargs):
         super().__init__(name=name)
