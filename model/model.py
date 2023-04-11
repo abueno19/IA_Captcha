@@ -8,7 +8,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import tensorflow_hub as hub
 class Model():
-    url = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/4"
+    url = "./tf2-preview_mobilenet_v2_feature_vector_4"
         
         
         
