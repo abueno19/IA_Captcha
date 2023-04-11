@@ -9,27 +9,28 @@ from tensorflow.keras import layers
 import tensorflow_hub as hub
 class Model():
     url = "./tf2-preview_mobilenet_v2_feature_vector_4"
-        
+    # url = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/4" 
         
         
     def model(self):
         # Cargar el modelo MobileNetV2 pre-entrenado desde TensorFlow Hub
         mobilenetv2 = hub.KerasLayer(self.url, input_shape=(224, 224, 3))
-        mobilenetv2.trainable = False # Deshabilitar el entrenamiento de las capas de MobileNetV2
+        # print(mobilenetv2)
+        mobilenetv2.trainable = True # Deshabilitar el entrenamiento de las capas de MobileNetV2
 
         # Inputs del modelo
         self.input_img = layers.Input(shape=(self.img_width, self.img_height, 1), name="image", dtype="float32")
         labels = layers.Input(name="label", shape=(None,), dtype="float32")
 
         # Conectar la capa MobileNetV2 como entrada al modelo
-        x = mobilenetv2(self.input_img)
+        x = mobilenetv2(self.input_img,True,True)
 
-        # Reshape para adaptarse a la salida de MobileNetV2
-        x = layers.Reshape(target_shape=(-1, 1280))(x)
+        # # Reshape para adaptarse a la salida de MobileNetV2
+        # x = layers.Reshape(target_shape=(-1, 1280))(x)
 
-        # RNNs
-        x = layers.Bidirectional(layers.LSTM(128, return_sequences=True, dropout=0.25))(x)
-        x = layers.Bidirectional(layers.LSTM(64, return_sequences=True, dropout=0.25))(x)
+        # # RNNs
+        # x = layers.Bidirectional(layers.LSTM(128, return_sequences=True, dropout=0.25))(x)
+        # x = layers.Bidirectional(layers.LSTM(64, return_sequences=True, dropout=0.25))(x)
 
         # Capa de salida
         x = layers.Dense(len(self.char_to_num.get_vocabulary()) + 1, activation="softmax", name="dense2")(x)
