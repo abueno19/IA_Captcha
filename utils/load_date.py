@@ -2,7 +2,7 @@
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import numpy as np
-
+from tensorflow import keras
 import os
 
 class Date():
@@ -14,32 +14,9 @@ class Date():
         
         
     def load_date(self):
-        
-        
-        # datagen = ImageDataGenerator(
-        #     rescale=1. / 255,
-        #     rotation_range = 30,
-        #     width_shift_range = 0.25,
-        #     height_shift_range = 0.25,
-        #     shear_range = 15,
-        #     zoom_range = [0.5, 1.5],
-        #     validation_split=0.2 #20% para pruebas
-        # )
-        # self.train_dataset=datagen.flow_from_directory('/home/antonio/mis_repos/Ia2/train/data', target_size=(self.img_width,self.img_height),
-        #                                              batch_size=self.batch_size, shuffle=True, subset='training',
-        #                                              class_mode='categorical', # Obtener etiquetas categóricas
-        #                                              classes=None, # Las clases se obtendrán automáticamente de los nombres de los archivos
-        #                                              )
-        # self.valid_dataset=datagen.flow_from_directory('/home/antonio/mis_repos/Ia2/train/data', target_size=(self.img_width,self.img_height),
-        #                                             batch_size=self.batch_size, shuffle=True, subset='training',
-        #                                             class_mode='categorical', # Obtener etiquetas categóricas
-        #                                             classes=None, # Las clases se obtendrán automáticamente de los nombres de los archivos
-        #                                              )
-        # print(self.train_dataset.class_indices)
         train_dataset = tf.data.Dataset.from_tensor_slices((self.x_train, self.y_train))
         self.train_dataset = (
             train_dataset.map(self.encode_single_sample, num_parallel_calls=tf.data.AUTOTUNE)
-            .cache()
             .batch(self.batch_size)
             .prefetch(buffer_size=tf.data.AUTOTUNE)
         )
@@ -47,7 +24,6 @@ class Date():
         valid_dataset = tf.data.Dataset.from_tensor_slices((self.x_valid, self.y_valid))
         self.valid_dataset = (
             valid_dataset.map(self.encode_single_sample, num_parallel_calls=tf.data.AUTOTUNE)
-            .cache()
             .batch(self.batch_size)
             .prefetch(buffer_size=tf.data.AUTOTUNE)
         )
@@ -71,3 +47,15 @@ class Date():
         img = tf.transpose(img, perm=[1, 0, 2])
         label = self.char_to_num(tf.strings.unicode_split(label, input_encoding="UTF-8"))
         return {"image": img, "label": label}
+    def decode_batch_predictions(self,pred):
+        input_len = np.ones(pred.shape[0]) * pred.shape[1]
+        # Use greedy search. For complex tasks, you can use beam search
+        results = keras.backend.ctc_decode(pred, input_length=input_len, greedy=True)[0][0][
+            :, :self.max_length
+        ]
+        # Iterate over the results and get back the text
+        output_text = []
+        for res in results:
+            res = tf.strings.reduce_join(self.num_to_char(res)).numpy().decode("utf-8")
+            output_text.append(res)
+        return output_text

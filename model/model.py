@@ -10,44 +10,76 @@ import tensorflow_hub as hub
 class Model():
     url = "./tf2-preview_mobilenet_v2_feature_vector_4"
     # url = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/4" 
-        
+    # self.input_img = hub.KerasLayer(self.url, input_shape=(224, 224, 3), trainable=False, dtype="float32")
         
     def model(self):
-        # Cargar el modelo MobileNetV2 pre-entrenado desde TensorFlow Hub
-        mobilenetv2 = hub.KerasLayer(self.url, input_shape=(224, 224, 3))
-        # print(mobilenetv2)
-        mobilenetv2.trainable = True # Deshabilitar el entrenamiento de las capas de MobileNetV2
-
-        # Inputs del modelo
-        self.input_img = layers.Input(shape=(self.img_width, self.img_height, 1), name="image", dtype="float32")
+        # Inputs to the model
+        self.input_img = layers.Input(
+            shape=(self.img_width, self.img_height, 1), name="image", dtype="float32"
+        )
         labels = layers.Input(name="label", shape=(None,), dtype="float32")
 
-        # Conectar la capa MobileNetV2 como entrada al modelo
-        x = mobilenetv2(self.input_img,True,True)
+        # First conv block
+        x = layers.Conv2D(
+            32,
+            (3, 3),
+            activation="relu",
+            kernel_initializer="he_normal",
+            padding="same",
+            name="Conv1",
+        )(self.input_img)
+        x = layers.MaxPooling2D((2, 2), name="pool1")(x)
 
-        # # Reshape para adaptarse a la salida de MobileNetV2
-        # x = layers.Reshape(target_shape=(-1, 1280))(x)
+        # Second conv block
+        x = layers.Conv2D(
+            64,
+            (3, 3),
+            activation="relu",
+            kernel_initializer="he_normal",
+            padding="same",
+            name="Conv2",
+        )(x)
+        x = layers.MaxPooling2D((2, 2), name="pool2")(x)
 
-        # # RNNs
-        # x = layers.Bidirectional(layers.LSTM(128, return_sequences=True, dropout=0.25))(x)
-        # x = layers.Bidirectional(layers.LSTM(64, return_sequences=True, dropout=0.25))(x)
+        # We have used two max pool with pool size and strides 2.
+        # Hence, downsampled feature maps are 4x smaller. The number of
+        # filters in the last layer is 64. Reshape accordingly before
+        # passing the output to the RNN part of the model
+        new_shape = ((self.img_width // 4), (self.img_height // 4) * 64)
+        x = layers.Reshape(target_shape=new_shape, name="reshape")(x)
+        x = layers.Dense(64, activation="relu", name="dense1")(x)
+        x = layers.Dropout(0.2)(x)
 
-        # Capa de salida
-        x = layers.Dense(len(self.char_to_num.get_vocabulary()) + 1, activation="softmax", name="dense2")(x)
+        # RNNs
+        x = layers.Bidirectional(layers.LSTM(128, return_sequences=True, dropout=0.25))(x)
+        x = layers.Bidirectional(layers.LSTM(64, return_sequences=True, dropout=0.25))(x)
 
-        # Agregar capa CTC para calcular la pérdida CTC en cada paso
+        # Output layer
+        x = layers.Dense(
+            len(self.char_to_num.get_vocabulary()) + 1, activation="softmax", name="dense2"
+        )(x)
+
+        # Add CTC layer for calculating CTC loss at each step
         output = CTCLayer(name="ctc_loss")(labels, x)
 
-        # Definir el modelo
-        model = keras.models.Model(inputs=[self.input_img, labels], outputs=output, name="ocr_model_v1")
-
-        # Compilar el modelo y devolverlo
-        model.compile(optimizer=keras.optimizers.Adam())
-
-        self.modelo1 = model
+        # Define the model
+        model = keras.models.Model(
+            inputs=[self.input_img, labels], outputs=output, name="ocr_model_v1"
+        )
+        # Optimizer
+        opt = keras.optimizers.Adam()
+        # Compile the model and return
+        model.compile(optimizer=opt)
         opt = keras.optimizers.Adam(learning_rate=0.001)
-        self.modelo1.compile(optimizer=opt)
-        self.modelo=self.modelo1
+        model.compile(optimizer=opt)
+        self.modelo=model
+    def save_model(self):
+        self.modelo.save('./model/model.h5')
+    def load_model(self):
+        with CustomObjectScope({'CTCLayer': CTCLayer}):
+            self.modelo = load_model('./model/model.h5')
+    
+
 class CTCLayer(layers.Layer):
     def __init__(self, name=None,**kwargs):
         super().__init__(name=name)

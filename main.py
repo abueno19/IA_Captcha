@@ -10,6 +10,7 @@ import os
 import numpy as np
 import train.train as train
 import utils.load_date as load_date
+import utils.predict as predict
 import model.model as model
 import utils.hilos as hilos
 from pathlib import Path
@@ -18,7 +19,7 @@ from tensorflow.keras import layers
 
 
 
-class Main(train.Train , load_date.Date, model.Model, hilos.Hilos):
+class Main(train.Train , load_date.Date, model.Model, hilos.Hilos, predict.Predict):
     def __init__(self) -> None:
         
         self.model_path = None
@@ -32,13 +33,13 @@ class Main(train.Train , load_date.Date, model.Model, hilos.Hilos):
         self.model_output_type = None
         self.model_input_dtype = None
         self.model_output_dtype = None
-        self.img_width= 244
-        self.img_height= 244
+        self.img_width= 200
+        self.img_height= 50
         self.batch_size= 16
         self.data_dir= Path("/home/antonio/Documentos/train/archive/comprasnet_imagensacerto")
         self.images = sorted(list(map(str, list(self.data_dir.glob("*.png")))))
         self.labels = [img.split(os.path.sep)[-1].split(".png")[0] for img in self.images]
-        
+        self.epochs = 50
         self.characters = set(char for label in self.labels for char in label)
         self.characters = sorted(list(self.characters))
         self.max_length = max([len(label) for label in self.labels])
@@ -65,10 +66,15 @@ if __name__ == "__main__":
     parser.add_argument("--predict", type=str, default=None, help="predict the image")
     parser.add_argument("--retrain", action="store_true", help="retrain the model")
     args = parser.parse_args()
-    Main().train()
-    print("hola")
+    modelo=Main()
+    # modelo.train()
+    # modelo.save_model()
     if args.train:
-        Main().train()
+        modelo.train()
+        modelo.save_model()
+    elif args.predict:
+        modelo.load_model()
+        modelo.predict(args.predict)
         
 
 
