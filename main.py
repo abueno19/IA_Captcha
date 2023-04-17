@@ -39,7 +39,7 @@ class Main(train.Train , load_date.Date, model.Model, hilos.Hilos, predict.Predi
         self.data_dir= Path("/home/antonio/Documentos/train/archive/comprasnet_imagensacerto")
         self.images = sorted(list(map(str, list(self.data_dir.glob("*.png")))))
         self.labels = [img.split(os.path.sep)[-1].split(".png")[0] for img in self.images]
-        self.epochs = 50
+        self.epochs = 15
         self.characters = set(char for label in self.labels for char in label)
         self.characters = sorted(list(self.characters))
         self.max_length = max([len(label) for label in self.labels])
