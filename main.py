@@ -33,8 +33,9 @@ class Main(train.Train , load_date.Date, model.Model, hilos.Hilos, predict.Predi
         self.model_output_type = None
         self.model_input_dtype = None
         self.model_output_dtype = None
-        self.img_width= 200
-        self.img_height= 50
+        self.img_width= 224
+        self.img_height= 224
+        self.img_channels=3
         self.batch_size= 16
         self.data_dir= Path("/home/antonio/Documentos/train/archive/comprasnet_imagensacerto")
         self.images = sorted(list(map(str, list(self.data_dir.glob("*.png")))))
@@ -52,7 +53,7 @@ class Main(train.Train , load_date.Date, model.Model, hilos.Hilos, predict.Predi
         
         
         
-        self.start(self.model)
+        self.start(self.model2)
         self.start(self.load_date())
         
         

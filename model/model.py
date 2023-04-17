@@ -78,7 +78,37 @@ class Model():
     def load_model(self):
         with CustomObjectScope({'CTCLayer': CTCLayer}):
             self.modelo = load_model('./model/model.h5')
-    
+    def model2(self):
+        mobilnet = hub.KerasLayer(self.url, input_shape=(224, 224, 3), dtype="float32", name="img")
+        mobilnet.trainable = False
+        labels = layers.Input(name="label", shape=(None,), dtype="float32")
+        modelo = tf.keras.Sequential([
+            # Capa del modelo preentrenado
+            mobilnet,
+
+            # Capa de aplanamiento
+            layers.Flatten(),
+            # Capa completamente conectada 1
+            layers.Dense(128, activation='relu'),
+            # Capa de remodelado para agregar una dimensión de secuencia
+            layers.Reshape((1, -1)),
+            # Capa LSTM para modelar secuencias
+            layers.LSTM(256, return_sequences=True), # return_sequences=True para generar una secuencia de salida
+            # Capa completamente conectada 2 para la salida
+            layers.TimeDistributed(layers.Dense(len(self.char_to_num.get_vocabulary()) + 1, activation='softmax')), # 26 clases para las letras del alfabeto inglés
+
+        ])
+        # Add CTC layer for calculating CTC loss at each step
+        output = CTCLayer2(name="ctc_loss")(labels, modelo.output)
+
+        # Define the model
+        self.modelo = keras.models.Model(
+            inputs=[modelo.input, labels], outputs=output, name="ocr_model_v1"
+        )
+
+        self.modelo.summary()
+        self.modelo.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001))
+
 
 class CTCLayer(layers.Layer):
     def __init__(self, name=None,**kwargs):
@@ -96,6 +126,28 @@ class CTCLayer(layers.Layer):
         label_length = label_length * tf.ones(shape=(batch_len, 1), dtype="int64")
 
         loss = self.loss_fn(y_true, y_pred, input_length, label_length)
+        self.add_loss(loss)
+
+        # At test time, just return the computed predictions
+        return y_pred
+class CTCLayer2(layers.Layer):
+    def __init__(self, name=None, **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.loss_fn = tf.keras.backend.ctc_batch_cost
+
+    def call(self, labels, y_pred):
+        # Compute the training-time loss value and add it
+        # to the layer using `self.add_loss()`.
+
+        # Compute input lengths, label lengths, and batch length
+        batch_len = tf.cast(tf.shape(y_pred)[0], dtype="int64")
+        input_length = tf.cast(tf.shape(y_pred)[1], dtype="int64")
+        label_length = tf.cast(tf.shape(labels)[1], dtype="int64")
+
+        input_length = input_length * tf.ones(shape=(batch_len, 1), dtype="int64")
+        label_length = label_length * tf.ones(shape=(batch_len, 1), dtype="int64")
+
+        loss = self.loss_fn(labels, y_pred, input_length, label_length)
         self.add_loss(loss)
 
         # At test time, just return the computed predictions

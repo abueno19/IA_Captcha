@@ -14,6 +14,8 @@ class Date():
         
         
     def load_date(self):
+        # print("Dimensiones de las imágenes:", self.images.shape)
+        # print("Dimensiones de las etiquetas:", self.labels.shape)
         train_dataset = tf.data.Dataset.from_tensor_slices((self.x_train, self.y_train))
         self.train_dataset = (
             train_dataset.map(self.encode_single_sample, num_parallel_calls=tf.data.AUTOTUNE)
@@ -30,23 +32,30 @@ class Date():
     def split_data(self, images, labels, train_size=0.9, shuffle=True):
         size = len(images)
         indices = np.arange(size)
+        print("Dimensiones de las imágenes antes de dividir los datos:", images.shape)
+        print("Dimensiones de las etiquetas antes de dividir los datos:", labels.shape)
         if shuffle:
             np.random.shuffle(indices)
         train_samples = int(size * train_size)
         x_train, y_train = images[indices[:train_samples]], labels[indices[:train_samples]]
         x_valid, y_valid = images[indices[train_samples:]], labels[indices[train_samples:]]
+        print("Dimensiones de los datos de entrenamiento (x_train, y_train):", x_train.shape, y_train.shape)
+        print("Dimensiones de los datos de validación (x_valid, y_valid):", x_valid.shape, y_valid.shape)
         
                 
         return x_train, x_valid, y_train, y_valid
 
     def encode_single_sample(self, img_path, label):
         img = tf.io.read_file(img_path)
-        img = tf.io.decode_png(img, channels=1)
+        img = tf.io.decode_png(img, channels=self.img_channels)
         img = tf.image.convert_image_dtype(img, tf.float32)
         img = tf.image.resize(img, [self.img_height, self.img_width])
+        print("Dimensiones de la imagen después del redimensionamiento:", img.shape)
         img = tf.transpose(img, perm=[1, 0, 2])
         label = self.char_to_num(tf.strings.unicode_split(label, input_encoding="UTF-8"))
-        return {"image": img, "label": label}
+        print("Codificación numérica de la etiqueta:", label)
+
+        return {"img_input": img, "label": label}
     def decode_batch_predictions(self,pred):
         input_len = np.ones(pred.shape[0]) * pred.shape[1]
         # Use greedy search. For complex tasks, you can use beam search
