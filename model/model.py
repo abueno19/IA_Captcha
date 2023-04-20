@@ -79,10 +79,10 @@ class Model():
         with CustomObjectScope({'CTCLayer': CTCLayer}):
             self.modelo = load_model('./model/model.h5')
     def model2(self):
+        labels = layers.Input(name="label", shape=(None,), dtype="float32")
         mobilnet = hub.KerasLayer(self.url, input_shape=(224, 224, 3), dtype="float32", name="img")
         mobilnet.trainable = False
-        labels = layers.Input(name="label", shape=(None,), dtype="float32")
-        modelo = tf.keras.Sequential([
+        self.modelo = tf.keras.Sequential([
             # Capa del modelo preentrenado
             mobilnet,
 
@@ -99,11 +99,12 @@ class Model():
 
         ])
         # Add CTC layer for calculating CTC loss at each step
-        output = CTCLayer2(name="ctc_loss")(labels, modelo.output)
+        output = CTCLayer2(name="ctc_loss")(labels, self.modelo.output)
 
         # Define the model
+        
         self.modelo = keras.models.Model(
-            inputs=[modelo.input, labels], outputs=output, name="ocr_model_v1"
+            inputs=[self.modelo.input, labels], outputs=output, name="ocr_model_v1"
         )
 
         self.modelo.summary()
@@ -124,31 +125,27 @@ class CTCLayer(layers.Layer):
 
         input_length = input_length * tf.ones(shape=(batch_len, 1), dtype="int64")
         label_length = label_length * tf.ones(shape=(batch_len, 1), dtype="int64")
-
+        
         loss = self.loss_fn(y_true, y_pred, input_length, label_length)
         self.add_loss(loss)
 
         # At test time, just return the computed predictions
         return y_pred
 class CTCLayer2(layers.Layer):
-    def __init__(self, name=None, **kwargs):
-        super().__init__(name=name, **kwargs)
-        self.loss_fn = tf.keras.backend.ctc_batch_cost
+    def __init__(self, name=None,**kwargs):
+        super().__init__(name=name)
+        self.loss_fn = keras.backend.ctc_batch_cost
 
-    def call(self, labels, y_pred):
+    def call(self, y_true, y_pred):
         # Compute the training-time loss value and add it
         # to the layer using `self.add_loss()`.
-
-        # Compute input lengths, label lengths, and batch length
-        batch_len = tf.cast(tf.shape(y_pred)[0], dtype="int64")
+        batch_len = tf.cast(tf.shape(y_true)[0], dtype="int64")
+        # Vamos a recoger el input_length de la capa anterior
         input_length = tf.cast(tf.shape(y_pred)[1], dtype="int64")
-        label_length = tf.cast(tf.shape(labels)[1], dtype="int64")
-
-        input_length = input_length * tf.ones(shape=(batch_len, 1), dtype="int64")
-        label_length = label_length * tf.ones(shape=(batch_len, 1), dtype="int64")
-
-        loss = self.loss_fn(labels, y_pred, input_length, label_length)
-        self.add_loss(loss)
-
-        # At test time, just return the computed predictions
+        label_length = tf.cast(tf.shape(y_true)[1], dtype="int64")
+        
+        
         return y_pred
+
+
+

@@ -33,14 +33,14 @@ class Main(train.Train , load_date.Date, model.Model, hilos.Hilos, predict.Predi
         self.model_output_type = None
         self.model_input_dtype = None
         self.model_output_dtype = None
-        self.img_width= 224
-        self.img_height= 224
-        self.img_channels=3
+        self.img_width= 200
+        self.img_height= 50
+        self.img_channels=1
         self.batch_size= 16
         self.data_dir= Path("/home/antonio/Documentos/train/archive/comprasnet_imagensacerto")
         self.images = sorted(list(map(str, list(self.data_dir.glob("*.png")))))
         self.labels = [img.split(os.path.sep)[-1].split(".png")[0] for img in self.images]
-        self.epochs = 15
+        self.epochs = 20
         self.characters = set(char for label in self.labels for char in label)
         self.characters = sorted(list(self.characters))
         self.max_length = max([len(label) for label in self.labels])
@@ -53,7 +53,7 @@ class Main(train.Train , load_date.Date, model.Model, hilos.Hilos, predict.Predi
         
         
         
-        self.start(self.model2)
+        self.start(self.model)
         self.start(self.load_date())
         
         
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     parser.add_argument("--retrain", action="store_true", help="retrain the model")
     args = parser.parse_args()
     modelo=Main()
-    # modelo.train()
+    modelo.train()
     # modelo.save_model()
     if args.train:
         modelo.train()
