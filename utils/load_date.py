@@ -1,9 +1,12 @@
 # Aqui vamos a cargar una clase para cargar los datos
 import tensorflow as tf
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import numpy as np
+import pandas as pd
 from tensorflow import keras
+from keras.preprocessing.image import ImageDataGenerator
 import os
+from sklearn.preprocessing import LabelEncoder
+
 
 class Date():
     def __init__(self,path,batch_size=16,img_width=224, img_height=224):
@@ -29,6 +32,45 @@ class Date():
             .batch(self.batch_size)
             .prefetch(buffer_size=tf.data.AUTOTUNE)
         )
+  
+    def load_date2(self):
+        image_names = os.listdir(self.datadir)
+        labels = [name.split('.')[0] for name in image_names]
+        
+        
+        # crea un dataframe con las rutas de archivo y las etiquetas
+        df = pd.DataFrame({
+            'filename': image_names,
+            'label': labels
+        })
+        
+        # crea un generador de datos de imagen a partir del dataframe
+        # datagen = ImageDataGenerator(rescale=1./255)
+        datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
+        self.train_dataset = datagen.flow_from_dataframe(
+            df,
+            directory=self.datadir,
+            x_col='filename',
+            y_col='label',
+            target_size=(224, 224),
+            batch_size=32,
+            class_mode='input',
+            subset='training'
+        )
+        
+
+        self.valid_dataset = datagen.flow_from_dataframe(
+            df,
+            directory=self.datadir,
+            x_col='filename',
+            y_col='label',
+            target_size=(224, 224),
+            batch_size=32,
+            class_mode='input',
+            subset='validation'
+        )
+        # to_categorical(self.train_dataset.labels, num_classes=len(self.train_dataset.class_indices))
+        # to_categorical(self.valid_dataset.labels, num_classes=len(self.train_dataset.class_indices))
     def split_data(self, images, labels, train_size=0.9, shuffle=True):
         size = len(images)
         indices = np.arange(size)
@@ -55,7 +97,7 @@ class Date():
         label = self.char_to_num(tf.strings.unicode_split(label, input_encoding="UTF-8"))
         # print("Codificación numérica de la etiqueta:", label)
 
-        return {"image": img, "label": label}
+        return {"img_input": img, "label": label}
     def decode_batch_predictions(self,pred):
         input_len = np.ones(pred.shape[0]) * pred.shape[1]
         # Use greedy search. For complex tasks, you can use beam search

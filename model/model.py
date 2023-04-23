@@ -109,7 +109,24 @@ class Model():
 
         self.modelo.summary()
         self.modelo.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001))
+    def model3(self):
+        mobilnet = hub.KerasLayer(self.url, input_shape=(224, 224, 3), dtype="float32", name="img")
+        model = keras.Sequential(
+            [
+                mobilnet,
+                layers.Dropout(0.25),
+                layers.Flatten(),
+                layers.RepeatVector(10),  # asumimos una longitud máxima de 10 caracteres en el captcha
+                layers.LSTM(128, return_sequences=True),
+                layers.Dense(len(self.char_to_num.get_vocabulary()) + 1, activation="softmax"),
+            ]
+        )
+        model.summary()
+        self.modelo=model
+        self.modelo.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss="mean_squared_error")
 
+        
+        
 
 class CTCLayer(layers.Layer):
     def __init__(self, name=None,**kwargs):

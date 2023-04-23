@@ -33,14 +33,15 @@ class Main(train.Train , load_date.Date, model.Model, hilos.Hilos, predict.Predi
         self.model_output_type = None
         self.model_input_dtype = None
         self.model_output_dtype = None
-        self.img_width= 200
-        self.img_height= 50
-        self.img_channels=1
+        self.img_width= 224
+        self.img_height= 224
+        self.img_channels=3
         self.batch_size= 16
-        self.data_dir= Path("/home/antonio/Documentos/train/archive/comprasnet_imagensacerto")
+        self.datadir= "/home/antonio/mis_repos/Ia2/train/data"
+        self.data_dir= Path(self.datadir)
         self.images = sorted(list(map(str, list(self.data_dir.glob("*.png")))))
         self.labels = [img.split(os.path.sep)[-1].split(".png")[0] for img in self.images]
-        self.epochs = 20
+        self.epochs = 25
         self.characters = set(char for label in self.labels for char in label)
         self.characters = sorted(list(self.characters))
         self.max_length = max([len(label) for label in self.labels])
@@ -53,8 +54,8 @@ class Main(train.Train , load_date.Date, model.Model, hilos.Hilos, predict.Predi
         
         
         
-        self.start(self.model)
-        self.start(self.load_date())
+        self.start(self.model3())
+        self.start(self.load_date2())
         
         
 
