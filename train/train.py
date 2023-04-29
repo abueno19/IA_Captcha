@@ -21,13 +21,16 @@ class Train():
             # Vamos a comprobar que todos lo hilos estan parados
             if all(not thread.is_alive() for thread in threads):
                 break
+            
+        
         # Vamos a entrenar el modelo
+        
         log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+        
         callbacks = [
             keras.callbacks.EarlyStopping(monitor="val_loss", patience=10, restore_best_weights=True),
             keras.callbacks.ModelCheckpoint(filepath='best_model_weights.h5', save_best_only=True, save_weights_only=True),
-            tensorboard_callback
+            tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
         ]
         
 

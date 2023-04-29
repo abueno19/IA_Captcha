@@ -6,6 +6,7 @@ from tensorflow import keras
 from keras.preprocessing.image import ImageDataGenerator
 import os
 from sklearn.preprocessing import LabelEncoder
+from keras.utils import to_categorical
 
 
 class Date():
@@ -34,16 +35,21 @@ class Date():
         )
   
     def load_date2(self):
+        # codificar las etiquetas de texto en números enteros
         image_names = os.listdir(self.datadir)
         labels = [name.split('.')[0] for name in image_names]
+
+        # le = LabelEncoder()
+        # labels = le.fit_transform(labels)
+
+        # # convertir los números enteros en vectores codificados en caliente
+        # labels = to_categorical(labels, num_classes=len(le.classes_))
         
-        
-        # crea un dataframe con las rutas de archivo y las etiquetas
+        # crear dataframe con los nombres de imágenes y etiquetas codificadas
         df = pd.DataFrame({
             'filename': image_names,
             'label': labels
         })
-        
         # crea un generador de datos de imagen a partir del dataframe
         # datagen = ImageDataGenerator(rescale=1./255)
         datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
@@ -54,9 +60,10 @@ class Date():
             y_col='label',
             target_size=(224, 224),
             batch_size=32,
-            class_mode='input',
+            class_mode='categorical',
             subset='training'
         )
+        # print("labels:", self.train_dataset.labels)
         
 
         self.valid_dataset = datagen.flow_from_dataframe(
@@ -66,9 +73,12 @@ class Date():
             y_col='label',
             target_size=(224, 224),
             batch_size=32,
-            class_mode='input',
+            class_mode='categorical',
             subset='validation'
         )
+        print('train_dataset x shape:', self.train_dataset[0][0].shape)
+        print('train_dataset y shape:', self.train_dataset[0][1].shape)
+
         # to_categorical(self.train_dataset.labels, num_classes=len(self.train_dataset.class_indices))
         # to_categorical(self.valid_dataset.labels, num_classes=len(self.train_dataset.class_indices))
     def split_data(self, images, labels, train_size=0.9, shuffle=True):

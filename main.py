@@ -54,7 +54,7 @@ class Main(train.Train , load_date.Date, model.Model, hilos.Hilos, predict.Predi
         
         
         
-        self.start(self.model3())
+        self.start(self.modelo8())
         self.start(self.load_date2())
         
         
